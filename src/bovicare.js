@@ -130,8 +130,8 @@ const coatTex = canvasTex(1024, 512, (g, w, h) => {
   for (let y = h; y >= 0; y -= 32) g.lineTo(w * (0.34 + R() * 0.03), y);
   g.fill();
   g.fillRect(0, 0, w, h * 0.12);                              // peito
-  for (const [u, v, rx, ry] of [[0.55, 0.42, 70, 52], [0.47, 0.70, 50, 40], [0.62, 0.62, 36, 30], [0.05, 0.50, 60, 46], [0.93, 0.38, 54, 42], [0.80, 0.80, 30, 26]]) {
-    g.beginPath(); g.ellipse(u * w, v * h, rx, ry, R() * 3, 0, Math.PI * 2); g.fill();
+  for (const [u, v, rx] of [[0.56, 0.45, 90], [0.47, 0.72, 62], [0.63, 0.66, 46], [0.05, 0.50, 80], [0.94, 0.40, 70], [0.80, 0.80, 40]]) {
+    g.beginPath(); g.ellipse(u * w, v * h, rx, rx * 0.5, (R() - 0.5) * 0.4, 0, Math.PI * 2); g.fill();
   }
 });
 const plateCanvas = document.createElement('canvas');
@@ -502,8 +502,16 @@ const legs = [];
     return m;
   };
   const prof = [[-0.97, 0.0], [-0.955, 0.12], [-0.92, 0.22], [-0.86, 0.29], [-0.75, 0.335], [-0.55, 0.35], [-0.30, 0.335], [0.0, 0.345], [0.30, 0.365], [0.52, 0.36], [0.66, 0.32], [0.76, 0.24], [0.81, 0.13], [0.825, 0.0]]
-    .map(([x, r]) => new THREE.Vector2(r, x));
-  const bodyGeo = new THREE.LatheGeometry(prof, 48);
+    ;
+  const even = [];
+  for (let i = 0; i <= 44; i++) {
+    const x = lerp(prof[0][0], prof[prof.length - 1][0], i / 44);
+    let k = 0;
+    while (k < prof.length - 2 && prof[k + 1][0] < x) k++;
+    const [xa, ra] = prof[k], [xb, rb] = prof[k + 1];
+    even.push(new THREE.Vector2(i === 0 || i === 44 ? 0 : lerp(ra, rb, (x - xa) / (xb - xa)), x));
+  }
+  const bodyGeo = new THREE.LatheGeometry(even, 48);
   bodyGeo.rotateZ(-Math.PI / 2);
   const body = sh(new THREE.Mesh(bodyGeo, coat));
   body.scale.set(1, 1.04, 0.82);
@@ -727,7 +735,7 @@ function resize() {
       oy = Math.round((bottom - top) / 2);
     }
   } else {
-    ox = panelOpen() ? 118 : 0;
+    ox = panelOpen() ? -30 : 0;
     oy = 22;
   }
   camera.setViewOffset(w, h, ox, oy, w, h);

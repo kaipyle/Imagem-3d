@@ -717,7 +717,7 @@ function resize() {
       oy = Math.round((bottom - top) / 2);
     }
   } else {
-    ox = panelOpen() ? 118 : 0;
+    ox = panelOpen() ? 40 : 0;
     oy = 22;
   }
   camera.setViewOffset(w, h, ox, oy, w, h);
