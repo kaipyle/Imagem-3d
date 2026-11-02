@@ -439,7 +439,7 @@ sling.position.x = BELLY_X;
 const strapG = group(belly, 'Fitas da cinta', true);
 const straps = [];
 for (const s of [-1, 1]) {
-  const st = sh(new THREE.Mesh(new THREE.BoxGeometry(0.24, 1, 0.012), M.black));
+  const st = sh(new THREE.Mesh(new THREE.BoxGeometry(0.11, 1, 0.01), M.black));
   st.position.set(BELLY_X, 1, s * 0.315);
   strapG.add(st);
   straps.push(st);
@@ -448,11 +448,16 @@ for (const s of [-1, 1]) {
 /* Iluminação em LED */
 const ledG = part('led', 'Iluminação em LED');
 box(ledG, 0.56, 0.05, 0.14, M.lampBody, -0.15, 2.015, 0, 0.012);
-const lampPanel = new THREE.Mesh(new THREE.PlaneGeometry(0.50, 0.09), M.lamp);
-lampPanel.rotation.x = Math.PI / 2;
-lampPanel.position.set(-0.15, 1.989, 0);
+const lampPanel = new THREE.Mesh(new THREE.BoxGeometry(0.50, 0.016, 0.10), M.lamp);
+lampPanel.position.set(-0.15, 1.984, 0);
 ledG.add(lampPanel);
-const spot = new THREE.SpotLight(0xfff1d6, 0, 4.5, 0.85, 0.65, 1.1);
+const glow = new THREE.Mesh(new THREE.ConeGeometry(0.62, 1.75, 40, 1, true), new THREE.MeshBasicMaterial({ color: 0xfff1cc, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, toneMapped: false }));
+glow.name = 'Facho de luz';
+glow.position.set(-0.15, 1.10, 0);
+glow.scale.set(1, 1, 0.6);
+glow.raycast = () => {};
+scene.add(glow);
+const spot = new THREE.SpotLight(0xfff1d6, 0, 5, 0.8, 0.55, 1.0);
 spot.position.set(-0.15, 1.96, 0);
 spot.target.position.set(-0.05, 0.2, 0);
 scene.add(spot, spot.target);
@@ -517,8 +522,6 @@ const legs = [];
   body.scale.set(1, 1.04, 0.82);
   body.position.set(0, 1.0, 0);
   cow.add(body);
-  ell(cow, 0.42, 0.08, 0.22, -0.60, 1.275, 0);
-  ell(cow, 0.36, 0.08, 0.2, 0.38, 1.29, 0);
   ell(cow, 0.20, 0.24, 0.17, 0.66, 0.84, 0, white);
   ell(cow, 0.30, 0.22, 0.185, 0.86, 1.06, 0, brown, [0, 0, -0.38]);
   const hd = new THREE.Group();
@@ -666,8 +669,10 @@ function applyPose(dt = 0) {
   const y0 = by + 0.20, y1 = 1.95;
   for (const st of straps) { st.scale.y = y1 - y0; st.position.y = (y0 + y1) / 2; }
   roller.rotation.z = -S.belly * 9;
-  M.lamp.emissiveIntensity = S.led * 3.2;
-  spot.intensity = S.led * 9;
+  M.lamp.emissiveIntensity = S.led * 4;
+  spot.intensity = S.led * 32;
+  glow.material.opacity = S.led * 0.10;
+  glow.visible = S.led > 0.01;
   // animal
   const dx = S.cowX - lastCowX;
   lastCowX = S.cowX;
