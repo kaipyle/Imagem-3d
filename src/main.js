@@ -8,6 +8,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { GLTFExporter } from 'three/examples/jsm/exporters/GLTFExporter.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 const DS = -1;                       // lado de apresentação
 const FLOOR = 0.14;                  // altura do piso interno
@@ -43,7 +44,7 @@ document.querySelectorAll('svg.logo').forEach((s) => { s.innerHTML = iconSVG; })
 /* ---------- renderizador / cena ---------- */
 const canvas = $('#scene');
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.05;
 renderer.shadowMap.enabled = true;
@@ -198,6 +199,7 @@ function pipe(parent, pts, r, mat) {
 function actuator(parent, barrelLen, rb = 0.032, rr = 0.015) {
   const g = new THREE.Group();
   g.name = 'Cilindro hidráulico';
+  g.userData.noMerge = true;
   parent.add(g);
   const barrel = sh(new THREE.Mesh(new THREE.CylinderGeometry(rb, rb, barrelLen, 22), M.green));
   barrel.position.y = barrelLen / 2;
@@ -510,6 +512,37 @@ const legs = [];
   ell(cow, 0.035, 0.09, 0.035, -0.96, 0.45, 0);
 }
 
+/* ---------- otimização: une peças fixas que compartilham material ---------- */
+function mergeStatic(root) {
+  const containers = [];
+  root.traverse((o) => { if (!o.isMesh && !o.userData.noMerge) containers.push(o); });
+  for (const g of containers) {
+    const buckets = new Map();
+    for (const c of g.children) {
+      if (!c.isMesh || c.userData.part || c.children.length || !c.material.isMeshStandardMaterial || c.material.transparent) continue;
+      if (!buckets.has(c.material)) buckets.set(c.material, []);
+      buckets.get(c.material).push(c);
+    }
+    for (const [mat, list] of buckets) {
+      if (list.length < 2) continue;
+      let geos = list.map((m) => {
+        m.updateMatrix();
+        const ge = m.geometry.clone();
+        ge.applyMatrix4(m.matrix);
+        for (const k of Object.keys(ge.attributes)) if (!['position', 'normal', 'uv'].includes(k)) ge.deleteAttribute(k);
+        return ge;
+      });
+      if (geos.some((ge) => !ge.index)) geos = geos.map((ge) => (ge.index ? ge.toNonIndexed() : ge));
+      const merged = mergeGeometries(geos, false);
+      if (!merged) continue;
+      const mesh = sh(new THREE.Mesh(merged, mat));
+      mesh.name = `${g.name || 'Peças'} · ${mat.name}`;
+      list.forEach((m) => g.remove(m));
+      g.add(mesh);
+    }
+  }
+}
+
 /* ---------- cotas ---------- */
 const dims = new THREE.Group();
 dims.name = 'Cotas';
@@ -536,6 +569,8 @@ dimension([1.85, 0.0, DS * 0.45], [1.85, 2.10, DS * 0.45], [null], [[1.17, 2.10,
 dimension([1.85, 0.02, -0.45], [1.85, 0.02, 0.45], [[1.57, 0.02, -0.45], [1.92, 0.02, -0.45]], [[1.57, 0.02, 0.45], [1.92, 0.02, 0.45]], '0,90 m');
 dims.traverse((o) => { o.castShadow = false; o.receiveShadow = false; });
 dims.visible = false;
+
+mergeStatic(model);
 
 /* ---------- chão ---------- */
 const shadowGround = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), new THREE.ShadowMaterial({ opacity: 0.2 }));
@@ -672,7 +707,8 @@ function resize() {
   camera.setViewOffset(w, h, ox, isNarrow() ? 0 : 22, w, h);
   camera.updateProjectionMatrix();
 }
-window.addEventListener('resize', resize);
+window.addEventListener('resize', () => { resize(); invalidate(); });
+controls.addEventListener('change', () => invalidate());
 
 /* ---------- destaques ---------- */
 const HOTSPOTS = [
@@ -767,6 +803,7 @@ function renderInfo() {
 }
 function select(id) {
   selected = id;
+  invalidate();
   HOTSPOTS.forEach((h) => h.el.classList.toggle('active', h.id === id));
   setHighlight(id);
   renderInfo();
@@ -814,8 +851,8 @@ document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('clic
 
 function bindToggle(id, fn) {
   const b = $(id);
-  b.addEventListener('click', () => { const v = b.getAttribute('aria-checked') !== 'true'; b.setAttribute('aria-checked', String(v)); fn(v); });
-  return (v) => { b.setAttribute('aria-checked', String(v)); fn(v); };
+  b.addEventListener('click', () => { const v = b.getAttribute('aria-checked') !== 'true'; b.setAttribute('aria-checked', String(v)); fn(v); invalidate(); });
+  return (v) => { b.setAttribute('aria-checked', String(v)); fn(v); invalidate(); };
 }
 const setCow = bindToggle('#tg-cow', (v) => { cow.visible = v; });
 bindToggle('#tg-dims', (v) => { dims.visible = v; lblLayer.hidden = !v; });
@@ -867,6 +904,7 @@ function setPresenting(v) {
   document.body.classList.toggle('presenting', v);
   $('#exit-present').hidden = !v;
   resize();
+  invalidate();
 }
 $('#present').addEventListener('click', () => setPresenting(true));
 $('#exit-present').addEventListener('click', () => setPresenting(false));
@@ -932,6 +970,8 @@ function pick(e) {
 const pv = new THREE.Vector3();
 const occRay = new THREE.Raycaster();
 let frameN = 0;
+let dirty = 3;
+const invalidate = () => { dirty = Math.max(dirty, 2); };
 function placeOverlay(el, pos, check) {
   pv.copy(pos).project(camera);
   const vis = pv.z < 1 && Math.abs(pv.x) < 1.1 && Math.abs(pv.y) < 1.1;
@@ -952,12 +992,17 @@ function placeOverlay(el, pos, check) {
 
 /* ---------- laço principal ---------- */
 const clock = new THREE.Clock();
+const tMin = new THREE.Vector3(-2.5, 0, -2), tMax = new THREE.Vector3(2.5, 2.4, 2);
 function loop() {
+  requestAnimationFrame(loop);
   const dt = Math.min(0.05, clock.getDelta());
+  const animating = tweens.size > 0 || !!fly || controls.autoRotate || hiParts.length > 0 || walkAmp > 0.002;
   stepTweens(dt);
   stepFly(dt);
-  controls.update();
-  controls.target.clamp(new THREE.Vector3(-2.5, 0, -2), new THREE.Vector3(2.5, 2.4, 2));
+  const moved = controls.update();
+  controls.target.clamp(tMin, tMax);
+  if (!animating && !moved && dirty <= 0) return;   // nada mudou: não redesenha
+  if (dirty > 0) dirty--;
   applyPose(dt);
   if (hiParts.length) {
     const t = performance.now() / 1000;
@@ -965,10 +1010,9 @@ function loop() {
   }
   renderer.render(scene, camera);
   frameN++;
-  const check = frameN % 6 === 0;
+  const check = frameN % 6 === 0 || (!animating && !moved);
   if (!hsLayer.hidden) for (const h of HOTSPOTS) placeOverlay(h.el, h.pos, check);
   if (dims.visible) for (const l of labels) placeOverlay(l.el, l.pos, false);
-  requestAnimationFrame(loop);
 }
 
 /* ---------- exportação GLB (Blender) ---------- */
@@ -986,7 +1030,7 @@ async function exportGLB() {
   for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
   return btoa(bin);
 }
-window.__safebov = { exportGLB, S, flyTo, VIEWS, select, mech, setView };
+window.__safebov = { exportGLB, S, flyTo, VIEWS, select, mech, setView, stats: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, meshes: (() => { let n = 0; model.traverse((o) => { if (o.isMesh) n++; }); return n; })() }) };
 
 /* ---------- início ---------- */
 resize();
@@ -1007,6 +1051,6 @@ syncUI();
 loop();
 if (document.fonts && document.fonts.load) {
   Promise.all([document.fonts.load('700 168px Caveat'), document.fonts.load('700 28px "Nunito Sans"')])
-    .then(() => { drawLogo(); logoTex.needsUpdate = true; lcdKey = ''; })
+    .then(() => { drawLogo(); logoTex.needsUpdate = true; lcdKey = ''; invalidate(); })
     .catch(() => {});
 }

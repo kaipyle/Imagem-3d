@@ -10,6 +10,15 @@ Brete de contenção bovina · Projeto de Maquete – Medicina Veterinária · P
 | `SafeBov.glb` | Modelo 3D para o Blender (ou PowerPoint, Windows 3D Viewer, Sketchfab). |
 | `src/` | Código-fonte do modelo e da página. |
 
+## Link online (GitHub Pages)
+
+Depois de ativar o GitHub Pages neste repositório, o modelo fica em
+**https://kaipyle.github.io/Imagem-3d/** e abre em qualquer navegador, inclusive no celular.
+
+Para ativar: no GitHub, abra o repositório › **Settings › Pages** › em *Build and deployment*,
+escolha *Deploy from a branch*, selecione o branch `claude/safebov-modelo-3d` e a pasta `/ (root)`,
+e clique em **Save**. O link funciona cerca de um minuto depois.
+
 ## Como apresentar
 
 - **Arrastar**: gira o modelo · **rolar**: aproxima · **botão direito**: desloca.
