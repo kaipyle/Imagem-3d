@@ -817,7 +817,7 @@ function renderInfo() {
     <div class="info-head"><b class="num">${n}</b><h3>${h.title}</h3></div>
     <p>${h.text}</p>
     <div class="info-actions">${act}<button type="button" class="ghost" id="info-back">Ver ficha técnica</button></div>`;
-  $('#info-back').onclick = () => select(null);
+  $('#info-back').onclick = () => { select(null); flyTo(VIEWS.perspectiva); setView('perspectiva'); };
   if (h.action) $('#info-act').onclick = () => toggleMech(h.action);
 }
 function select(id) {

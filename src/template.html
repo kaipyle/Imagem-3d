@@ -139,7 +139,7 @@ body.presenting .panel { display: none; }
   .brand h1 { font-size: 42px; }
   .brand p { display: none; }
   .panel, .info { top: auto; left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(var(--foot) + 66px + env(safe-area-inset-bottom, 0px)); width: auto; max-height: 56vh; overflow-y: auto; overscroll-behavior: contain; }
-  .panel { display: none; padding-top: 14px; }
+  .panel { display: none; padding-top: 14px; max-height: 44vh; }
   body.panel-open .panel { display: flex; }
   body.presenting.panel-open .panel { display: none; }
   .info { padding: 14px 16px; }
