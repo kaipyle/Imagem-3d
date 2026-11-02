@@ -1,0 +1,230 @@
+<title>SafeBov 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Modelo 3D interativo do brete de contenção bovina SafeBov.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&display=swap">
+<style>
+/* Layout: palco 3D em tela cheia; marca no canto superior esquerdo, comandos à direita,
+   ficha técnica / detalhe no canto inferior esquerdo, faixa institucional no rodapé.
+   Tema claro único, escolhido para projetor de sala de aula (mesma linguagem da prancha). */
+:root {
+  --forest: #1d4a2c;
+  --leaf: #2f7a45;
+  --leaf-soft: #e2ece0;
+  --paper: #eef1ec;
+  --card: rgba(251, 252, 249, 0.93);
+  --ink: #17201a;
+  --muted: #56635a;
+  --line: #d2dad1;
+  --amber: #e7b93f;
+  --on-forest: #eaf1e7;
+  --display: "Caveat", "Segoe Print", "Bradley Hand", cursive;
+  --body: "Nunito Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --foot: 44px;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; overflow: hidden; -webkit-font-smoothing: antialiased; }
+button { font-family: inherit; }
+:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+
+#stage { position: fixed; inset: 0; background: radial-gradient(120% 95% at 38% 38%, #fdfdfb 0%, #eef1ec 52%, #dce3d9 100%); }
+#scene { display: block; width: 100%; height: 100%; touch-action: none; }
+.layer { position: fixed; inset: 0; pointer-events: none; }
+
+/* marca */
+.brand { position: fixed; top: calc(18px + env(safe-area-inset-top, 0px)); left: max(20px, env(safe-area-inset-left, 0px)); display: flex; align-items: center; gap: 12px; pointer-events: none; }
+.brand .logo { width: 66px; height: 66px; color: var(--forest); flex: none; }
+svg.logo { fill: none; stroke: currentColor; stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
+.brand h1 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 60px; line-height: 0.85; color: var(--forest); letter-spacing: 0.5px; }
+.brand p { margin: 6px 0 0; color: var(--muted); font-size: 15px; line-height: 1.35; max-width: 27ch; }
+
+/* painel */
+.panel { position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(var(--foot) + 16px + env(safe-area-inset-bottom, 0px)); width: 300px; display: flex; flex-direction: column; gap: 14px; padding: 16px 18px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 12px 34px rgba(29, 74, 44, 0.10); overflow-y: auto; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.panel section { display: flex; flex-direction: column; gap: 8px; }
+.panel h2 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 29px; line-height: 1; color: var(--forest); }
+.views { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.chip { padding: 8px 6px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink); font-size: 13.5px; font-weight: 700; cursor: pointer; transition: background .15s, border-color .15s, color .15s; }
+.chip:hover { border-color: var(--leaf); }
+.chip[aria-pressed="true"] { background: var(--forest); border-color: var(--forest); color: var(--on-forest); }
+
+.mech { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.mech:first-of-type { border-top: 1px solid var(--line); }
+.mech strong { display: block; font-size: 15px; }
+.mech .state { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.mech .state::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--leaf); }
+.mech.open .state::before { background: var(--amber); }
+.act { min-width: 74px; padding: 8px 12px; border: 1.5px solid var(--forest); border-radius: 9px; background: #fff; color: var(--forest); font-size: 14px; font-weight: 800; cursor: pointer; }
+.act:hover:not(:disabled) { background: var(--leaf-soft); }
+.act:disabled, .primary:disabled { opacity: .5; cursor: default; }
+.primary { margin-top: 6px; padding: 12px 14px; border: 0; border-radius: 11px; background: var(--forest); color: var(--on-forest); font-size: 15.5px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 9px; }
+.primary::before { content: ""; width: 0; height: 0; border-left: 10px solid currentColor; border-top: 6.5px solid transparent; border-bottom: 6.5px solid transparent; }
+.primary:hover:not(:disabled) { background: var(--leaf); }
+.note { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 6px 0; border: 0; background: none; color: var(--ink); font-size: 14.5px; font-weight: 600; cursor: pointer; text-align: left; }
+.toggle i { position: relative; flex: none; width: 38px; height: 22px; border-radius: 11px; background: #c9d1c8; transition: background .18s; }
+.toggle i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .18s; }
+.toggle[aria-checked="true"] i { background: var(--leaf); }
+.toggle[aria-checked="true"] i::after { transform: translateX(16px); }
+
+.keys { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); }
+.keys p { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+kbd { display: inline-block; min-width: 20px; padding: 0 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; background: #fff; font: 700 11.5px var(--body); color: var(--ink); text-align: center; }
+.row-btns { display: flex; gap: 6px; }
+.ghost { flex: 1; padding: 9px 10px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--forest); font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.ghost:hover { border-color: var(--leaf); }
+
+/* ficha / detalhe */
+.info { position: fixed; left: max(20px, env(safe-area-inset-left, 0px)); bottom: calc(var(--foot) + 16px + env(safe-area-inset-bottom, 0px)); width: min(360px, calc(100vw - 32px)); padding: 16px 18px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 12px 34px rgba(29, 74, 44, 0.10); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.info h3 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 28px; line-height: 1.02; color: var(--forest); text-wrap: balance; }
+.info h4 { margin: 12px 0 6px; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.info p { margin: 8px 0 0; line-height: 1.5; max-width: 60ch; }
+.specs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 10px 0 0; }
+.specs div { padding: 8px 10px; border-radius: 10px; background: var(--leaf-soft); }
+.specs dt { font-size: 11.5px; color: var(--muted); font-weight: 700; }
+.specs dd { margin: 2px 0 0; font-size: 19px; font-weight: 800; color: var(--forest); font-variant-numeric: tabular-nums; }
+.mats { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 14px; font-weight: 700; }
+.mats li { display: flex; align-items: center; gap: 9px; }
+.mats span { font-weight: 400; color: var(--muted); }
+.sw { flex: none; width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
+.sw-steel { background: radial-gradient(circle at 35% 30%, #6d7376, #2b2f31); }
+.sw-galv { background: radial-gradient(circle at 35% 30%, #f2f4f5, #9aa2a6); }
+.sw-pad { background: radial-gradient(circle at 35% 30%, #4f9a63, #1f4c2d); }
+.sw-floor { background: repeating-linear-gradient(45deg, #2a2b2c 0 3px, #111 3px 6px); }
+.sw-hose { background: radial-gradient(circle at 35% 30%, #444, #0b0b0b); }
+.hint-small { font-size: 12.5px; color: var(--muted); }
+.info-head { display: flex; align-items: center; gap: 10px; }
+.num { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--amber); color: var(--ink); font-size: 15px; font-weight: 800; }
+.info-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.info-actions .ghost { flex: 0 1 auto; }
+
+/* marcadores */
+.hs { position: absolute; left: 0; top: 0; width: 32px; height: 32px; margin: -16px 0 0 -16px; display: grid; place-items: center; border: 2.5px solid #fff; border-radius: 50%; background: var(--forest); color: var(--on-forest); font: 800 14.5px var(--body); box-shadow: 0 3px 10px rgba(16, 40, 24, .35); cursor: pointer; pointer-events: auto; transition: opacity .25s, background .2s, scale .2s; }
+.hs::after { content: ""; position: absolute; inset: -7px; border-radius: 50%; border: 2px solid var(--forest); opacity: 0; animation: ping 2.6s ease-out infinite; }
+.hs:hover { scale: 1.12; }
+.hs.active { background: var(--amber); color: var(--ink); scale: 1.15; }
+.hs.active::after { border-color: var(--amber); }
+.hs.occluded { opacity: .38; }
+.hs.occluded::after { animation: none; }
+@keyframes ping { 0% { opacity: .7; transform: scale(.7); } 70%, 100% { opacity: 0; transform: scale(1.35); } }
+.dim { position: absolute; left: 0; top: 0; margin: -14px 0 0 -34px; width: 68px; padding: 4px 0; border-radius: 8px; background: var(--forest); color: var(--on-forest); font: 800 14px var(--body); text-align: center; font-variant-numeric: tabular-nums; box-shadow: 0 2px 8px rgba(0,0,0,.18); }
+
+/* legenda da simulação e dica */
+.caption { position: fixed; top: calc(20px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 10px 18px 10px 10px; border-radius: 999px; background: var(--forest); color: var(--on-forest); font-size: 17px; font-weight: 700; box-shadow: 0 10px 30px rgba(16, 40, 24, .3); white-space: nowrap; }
+.caption b { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--amber); color: var(--ink); font-size: 16px; }
+.hint { position: fixed; left: 50%; bottom: calc(var(--foot) + 22px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); padding: 8px 16px; border-radius: 999px; background: rgba(23, 32, 26, .78); color: #fff; font-size: 14px; font-weight: 600; pointer-events: none; transition: opacity .6s; white-space: nowrap; }
+.hint.gone { opacity: 0; }
+
+/* rodapé */
+.footer { position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--foot) + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--forest); color: var(--on-forest); font-size: 14px; }
+.footer .f-left { display: flex; align-items: center; gap: 10px; min-width: 0; white-space: nowrap; overflow: hidden; }
+.footer .logo { width: 26px; height: 26px; color: var(--on-forest); flex: none; }
+.footer .f-name { font-family: var(--display); font-size: 25px; font-weight: 700; }
+.footer .sep { opacity: .5; }
+.footer .motto { font-family: var(--display); font-size: 22px; white-space: nowrap; }
+
+.floating { position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); flex: none; box-shadow: 0 6px 20px rgba(0,0,0,.12); }
+.panel-toggle { display: none; }
+
+/* modo apresentação */
+body.presenting .panel { display: none; }
+
+/* telas estreitas */
+@media (max-width: 760px) {
+  :root { --foot: 38px; }
+  .brand { top: calc(12px + env(safe-area-inset-top, 0px)); left: max(16px, env(safe-area-inset-left, 0px)); gap: 8px; }
+  .brand .logo { width: 44px; height: 44px; }
+  .brand h1 { font-size: 42px; }
+  .brand p { display: none; }
+  .panel { display: none; top: auto; left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(var(--foot) + 64px + env(safe-area-inset-bottom, 0px)); width: auto; max-height: 58vh; }
+  body.panel-open .panel { display: flex; }
+  body.presenting.panel-open .panel { display: none; }
+  .panel-toggle { display: block; position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--foot) + 14px + env(safe-area-inset-bottom, 0px)); padding: 11px 22px; border: 0; border-radius: 999px; background: var(--forest); color: var(--on-forest); font-size: 15px; font-weight: 800; box-shadow: 0 8px 24px rgba(16, 40, 24, .3); cursor: pointer; }
+  body.presenting .panel-toggle { display: none; }
+  .info { left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); width: auto; bottom: calc(var(--foot) + 64px + env(safe-area-inset-bottom, 0px)); padding: 14px 16px; }
+  .info h3 { font-size: 25px; }
+  .footer .f-long, .footer .motto, .footer .sep { display: none; }
+  .caption { font-size: 14px; top: calc(70px + env(safe-area-inset-top, 0px)); white-space: normal; width: max-content; max-width: calc(100vw - 32px); }
+  .hint { display: none; }
+  .hs { width: 28px; height: 28px; margin: -14px 0 0 -14px; font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hs::after { animation: none; }
+}
+</style>
+<!--BODY-->
+<div id="stage"><canvas id="scene" aria-label="Modelo 3D do brete SafeBov. Arraste para girar."></canvas></div>
+<div id="labels" class="layer"></div>
+<div id="hotspots" class="layer"></div>
+
+<header class="brand">
+  <svg class="logo" viewBox="0 0 100 100" aria-hidden="true"></svg>
+  <div>
+    <h1>SafeBov</h1>
+    <p>Mais segurança, bem-estar e praticidade no manejo.</p>
+  </div>
+</header>
+
+<div class="caption" id="caption" hidden><b id="cap-n">1</b><span id="cap-t"></span></div>
+<div class="hint" id="hint">Arraste para girar · role para aproximar · toque nos números</div>
+
+<aside class="panel" id="panel" aria-label="Comandos do modelo">
+  <section>
+    <h2>Vistas</h2>
+    <div class="views" role="group" aria-label="Vistas do equipamento">
+      <button type="button" class="chip" data-view="perspectiva" aria-pressed="true">Perspectiva</button>
+      <button type="button" class="chip" data-view="frontal" aria-pressed="false">Frontal</button>
+      <button type="button" class="chip" data-view="lateral" aria-pressed="false">Lateral</button>
+      <button type="button" class="chip" data-view="traseira" aria-pressed="false">Traseira</button>
+      <button type="button" class="chip" data-view="superior" aria-pressed="false">Superior</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Acionamentos</h2>
+    <div>
+      <div class="mech" data-mech="head"><div><strong>Cabeceira</strong><span class="state">Fechada</span></div><button type="button" class="act" id="mech-head">Abrir</button></div>
+      <div class="mech" data-mech="doors"><div><strong>Laterais articuladas</strong><span class="state">Fechadas</span></div><button type="button" class="act" id="mech-doors">Abrir</button></div>
+      <div class="mech" data-mech="rear"><div><strong>Portão traseiro</strong><span class="state">Fechado</span></div><button type="button" class="act" id="mech-rear">Abrir</button></div>
+    </div>
+    <button type="button" class="primary" id="simulate">Simular manejo</button>
+    <p class="note">Entrada do animal, fechamento do portão, contenção da cabeça e abertura das laterais.</p>
+  </section>
+
+  <section>
+    <h2>Exibir</h2>
+    <div>
+      <button type="button" class="toggle" role="switch" aria-checked="true" id="tg-cow"><span>Animal</span><i></i></button>
+      <button type="button" class="toggle" role="switch" aria-checked="false" id="tg-dims"><span>Medidas (cotas)</span><i></i></button>
+      <button type="button" class="toggle" role="switch" aria-checked="true" id="tg-hs"><span>Pontos de destaque</span><i></i></button>
+      <button type="button" class="toggle" role="switch" aria-checked="false" id="tg-spin"><span>Giro automático</span><i></i></button>
+    </div>
+  </section>
+
+  <section class="keys">
+    <div class="row-btns">
+      <button type="button" class="ghost" id="present">Modo apresentação</button>
+      <button type="button" class="ghost" id="fullscreen">Tela cheia</button>
+    </div>
+    <p><kbd>P</kbd> apresentação &nbsp;<kbd>F</kbd> tela cheia &nbsp;<kbd>R</kbd> giro &nbsp;<kbd>Esc</kbd> voltar</p>
+  </section>
+</aside>
+
+<section class="info" id="info" aria-live="polite"></section>
+
+<button type="button" class="ghost floating" id="exit-present" hidden>Sair da apresentação</button>
+<button type="button" class="panel-toggle" id="panel-toggle" aria-controls="panel" aria-expanded="false">Comandos</button>
+
+<footer class="footer">
+  <div class="f-left">
+    <svg class="logo" viewBox="0 0 100 100" aria-hidden="true"></svg>
+    <span class="f-name">SafeBov</span>
+    <span class="sep">|</span><span class="f-long">Projeto de Maquete – Medicina Veterinária</span>
+    <span class="sep">|</span><span>PUCPR</span>
+  </div>
+  <div class="motto">Cuidar do animal também é um ato de inovação.</div>
+</footer>
+
+<script>/*APP*/</script>
