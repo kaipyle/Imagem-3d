@@ -1,19 +1,21 @@
-# SafeBov – modelo 3D interativo
+# Bretes de contenção em 3D – SafeBov e BOVICARE
 
-Brete de contenção bovina · Projeto de Maquete – Medicina Veterinária · PUCPR
+Modelos 3D interativos de dois projetos de brete de contenção bovina.
 
 ## Arquivos
 
 | Arquivo | Para quê |
 |---|---|
-| `SafeBov-3D.html` | Apresentação. Abra com dois cliques em qualquer navegador (Chrome, Edge, Firefox). Funciona sem internet; com internet, carrega também as fontes da identidade visual. |
-| `SafeBov.glb` | Modelo 3D para o Blender (ou PowerPoint, Windows 3D Viewer, Sketchfab). |
-| `src/` | Código-fonte do modelo e da página. |
+| `SafeBov-3D.html` | SafeBov (Projeto de Maquete – Medicina Veterinária – PUCPR). Abra com dois cliques em qualquer navegador. Funciona sem internet. |
+| `BOVICARE-3D.html` | BOVICARE (brete de contenção inteligente). Mesmo funcionamento. |
+| `SafeBov.glb` / `BOVICARE.glb` | Modelos para o Blender (ou PowerPoint, Windows 3D Viewer, Sketchfab). |
+| `index.html` | Página inicial do link online, com os dois projetos. |
+| `src/` | Código-fonte. `main.js` é o SafeBov, `bovicare.js` é o BOVICARE; os dois usam o mesmo motor de câmera e interface. |
 
 ## Link online (GitHub Pages)
 
-Depois de ativar o GitHub Pages neste repositório, o modelo fica em
-**https://kaipyle.github.io/Imagem-3d/** e abre em qualquer navegador, inclusive no celular.
+Depois de ativar o GitHub Pages neste repositório, os modelos ficam em
+**https://kaipyle.github.io/Imagem-3d/** e abrem em qualquer navegador, inclusive no celular.
 
 Para ativar: no GitHub, abra o repositório › **Settings › Pages** › em *Build and deployment*,
 escolha *Deploy from a branch*, selecione o branch `claude/safebov-modelo-3d` e a pasta `/ (root)`,
@@ -22,27 +24,29 @@ e clique em **Save**. O link funciona cerca de um minuto depois.
 ## Como apresentar
 
 - **Arrastar**: gira o modelo · **rolar**: aproxima · **botão direito**: desloca.
-- **Vistas**: perspectiva, frontal, lateral, traseira e superior (as mesmas da prancha).
-- **Acionamentos**: abre e fecha cabeceira, laterais e portão traseiro.
-- **Simular manejo**: entrada do animal → portão traseiro fecha → cabeceira contém o pescoço → laterais abrem.
+- **Vistas**: perspectiva, frontal, lateral, traseira e superior.
+- **Acionamentos**: cada mecanismo abre e fecha pelo painel ou pelo cartão do ponto de destaque.
+  - SafeBov: cabeceira, laterais articuladas, portão traseiro.
+  - BOVICARE: contenção de cabeça, painéis laterais, porta basculante, cinta abdominal, porta traseira, iluminação LED.
+- **Simular manejo**: o animal entra e o brete executa a sequência completa do projeto.
 - **Números sobre o modelo**: cada um explica uma funcionalidade; clicar direto numa peça também abre a explicação.
-- Teclas: `P` modo apresentação (esconde o painel) · `F` tela cheia · `R` giro automático · `Esc` volta.
+- No celular: barra de baixo com **Comandos** e **Ficha técnica**.
+- Teclas: `P` modo apresentação · `F` tela cheia · `R` giro automático · `Esc` volta.
 
 ## Abrir no Blender
 
-`File › Import › glTF 2.0 (.glb/.gltf)` e escolha `SafeBov.glb`. As peças chegam separadas e nomeadas
-(Estrutura, Cabeceira, Laterais articuladas, Portão traseiro, Sistema hidráulico, Painel de controle,
-Degrau do operador, Animal), com materiais e o logotipo já aplicados.
+`File › Import › glTF 2.0 (.glb/.gltf)` e escolha o `.glb`. As peças chegam separadas, nomeadas e com materiais.
 
 ## Medidas usadas
 
-Comprimento 2,80 m (da rampa de saída ao portão traseiro) · largura 0,90 m · altura 2,10 m (topo da
-estrutura; a alavanca verde passa um pouco acima). As peças não cotadas na prancha foram
-dimensionadas por proporção.
+- SafeBov: 2,80 m (da rampa de saída ao portão traseiro) × 0,90 m × 2,10 m.
+- BOVICARE: 3,50 m (estrutura, sem o cocho) × 0,90 a 1,00 m × 2,10 m.
+
+As peças não cotadas nas pranchas foram dimensionadas por proporção.
 
 ## Gerar de novo após editar
 
 ```bash
 npm install
-npm run build        # gera SafeBov-3D.html
+npm run build        # gera SafeBov-3D.html e BOVICARE-3D.html
 ```

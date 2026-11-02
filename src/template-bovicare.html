@@ -1,0 +1,259 @@
+<title>BOVICARE 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Modelo 3D interativo do brete de contenção inteligente BOVICARE.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;1,400&family=Source+Sans+3:wght@400;600;700;800&display=swap">
+<style>
+/* Layout: palco 3D em tela cheia; selo da marca no canto superior esquerdo, comandos à direita,
+   ficha técnica / detalhe no canto inferior esquerdo, diferenciais no rodapé.
+   Tema claro único (creme e verde-escuro da prancha BOVICARE), pensado para projetor. */
+:root {
+  --forest: #1c3a29;
+  --leaf: #2e5b3e;
+  --leaf-soft: #e7e8dc;
+  --paper: #eeebe1;
+  --card: rgba(251, 250, 245, 0.94);
+  --ink: #1d211d;
+  --muted: #5e6258;
+  --line: #d9d5c8;
+  --amber: #e3b341;
+  --red: #b8282e;
+  --on-forest: #f2ede0;
+  --display: "Playfair Display", Georgia, "Times New Roman", serif;
+  --body: "Source Sans 3", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --foot: 44px;
+  color-scheme: light;
+}
+html, body { height: 100%; }
+body { background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; overflow: hidden; -webkit-font-smoothing: antialiased; }
+button { font-family: inherit; }
+:focus-visible { outline: 3px solid var(--amber); outline-offset: 2px; }
+
+#stage { position: fixed; inset: 0; background: radial-gradient(120% 95% at 40% 38%, #fcfbf7 0%, #eeebe1 52%, #ddd8c8 100%); }
+#scene { display: block; width: 100%; height: 100%; touch-action: none; }
+.layer { position: fixed; inset: 0; pointer-events: none; }
+
+/* marca */
+.brand { position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); left: max(20px, env(safe-area-inset-left, 0px)); padding: 14px 20px 16px; border-radius: 14px; background: var(--forest); color: var(--on-forest); box-shadow: 0 10px 28px rgba(28, 58, 41, .22); pointer-events: none; }
+.brand h1 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 44px; line-height: 0.95; letter-spacing: 0.01em; }
+.brand .sub { margin: 4px 0 0; font-family: var(--display); font-size: 19px; }
+.brand .tag { margin: 8px 0 0; font-size: 14px; line-height: 1.35; max-width: 31ch; opacity: .85; }
+
+/* painel */
+.panel { position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(var(--foot) + 16px + env(safe-area-inset-bottom, 0px)); width: 300px; display: flex; flex-direction: column; gap: 14px; padding: 16px 18px 14px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 12px 34px rgba(29, 74, 44, 0.10); overflow-y: auto; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.panel section { display: flex; flex-direction: column; gap: 8px; }
+.panel h2 { align-self: flex-start; margin: 0; padding: 6px 12px 5px; border-radius: 6px 6px 6px 0; background: var(--forest); color: var(--on-forest); font-family: var(--display); font-weight: 600; font-size: 13.5px; line-height: 1.1; letter-spacing: .09em; text-transform: uppercase; }
+.views { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.chip { padding: 8px 6px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--ink); font-size: 13.5px; font-weight: 700; cursor: pointer; transition: background .15s, border-color .15s, color .15s; }
+.chip:hover { border-color: var(--leaf); }
+.chip[aria-pressed="true"] { background: var(--forest); border-color: var(--forest); color: var(--on-forest); }
+
+.mech { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 0; border-bottom: 1px solid var(--line); }
+.mech:first-of-type { border-top: 1px solid var(--line); }
+.mech strong { display: block; font-size: 15px; }
+.mech .state { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); font-weight: 600; }
+.mech .state::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--leaf); }
+.mech.open .state::before { background: var(--amber); }
+.act { min-width: 74px; padding: 8px 12px; border: 1.5px solid var(--forest); border-radius: 9px; background: #fff; color: var(--forest); font-size: 14px; font-weight: 800; cursor: pointer; }
+.act:hover:not(:disabled) { background: var(--leaf-soft); }
+.act:disabled, .primary:disabled { opacity: .5; cursor: default; }
+.primary { margin-top: 6px; padding: 12px 14px; border: 0; border-radius: 11px; background: var(--forest); color: var(--on-forest); font-size: 15.5px; font-weight: 800; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 9px; }
+.primary::before { content: ""; width: 0; height: 0; border-left: 10px solid currentColor; border-top: 6.5px solid transparent; border-bottom: 6.5px solid transparent; }
+.primary:hover:not(:disabled) { background: var(--leaf); }
+.note { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.4; }
+
+.toggle { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; padding: 6px 0; border: 0; background: none; color: var(--ink); font-size: 14.5px; font-weight: 600; cursor: pointer; text-align: left; }
+.toggle i { position: relative; flex: none; width: 38px; height: 22px; border-radius: 11px; background: #c9d1c8; transition: background .18s; }
+.toggle i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 16px; height: 16px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .18s; }
+.toggle[aria-checked="true"] i { background: var(--leaf); }
+.toggle[aria-checked="true"] i::after { transform: translateX(16px); }
+
+.keys { margin-top: auto; padding-top: 12px; border-top: 1px solid var(--line); }
+.keys p { margin: 0; font-size: 12.5px; color: var(--muted); line-height: 1.5; }
+kbd { display: inline-block; min-width: 20px; padding: 0 5px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; background: #fff; font: 700 11.5px var(--body); color: var(--ink); text-align: center; }
+.row-btns { display: flex; gap: 6px; }
+.ghost { flex: 1; padding: 9px 10px; border: 1px solid var(--line); border-radius: 9px; background: #fff; color: var(--forest); font-size: 13.5px; font-weight: 700; cursor: pointer; }
+.ghost:hover { border-color: var(--leaf); }
+
+/* ficha / detalhe */
+.info { position: fixed; left: max(20px, env(safe-area-inset-left, 0px)); bottom: calc(var(--foot) + 16px + env(safe-area-inset-bottom, 0px)); width: min(360px, calc(100vw - 32px)); padding: 16px 18px; background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 12px 34px rgba(29, 74, 44, 0.10); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+.info h3 { margin: 0; font-family: var(--display); font-weight: 700; font-size: 23px; line-height: 1.12; color: var(--forest); text-wrap: balance; }
+.info h4 { margin: 12px 0 6px; font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.info p { margin: 8px 0 0; line-height: 1.5; max-width: 60ch; }
+.specs { display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 8px; margin: 10px 0 0; }
+.specs div { padding: 8px 10px; border-radius: 10px; background: var(--leaf-soft); }
+.specs dt { font-size: 11.5px; color: var(--muted); font-weight: 700; }
+.specs dd { margin: 2px 0 0; font-size: 17.5px; white-space: nowrap; font-weight: 800; color: var(--forest); font-variant-numeric: tabular-nums; }
+.mats { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: 14px; font-weight: 700; }
+.mats li { display: flex; align-items: center; gap: 9px; }
+.mats span { font-weight: 400; color: var(--muted); }
+.sw { flex: none; width: 16px; height: 16px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
+.sw-epoxy { background: radial-gradient(circle at 35% 30%, #3f7a55, #16301f); }
+.sw-wood { background: repeating-linear-gradient(0deg, #9a6a42 0 3px, #7d5130 3px 5px); }
+.sw-eva { background: radial-gradient(circle at 35% 30%, #4a4b4d, #0f1010); }
+.sw-floor { background: repeating-linear-gradient(45deg, #2a2b2c 0 3px, #111 3px 6px); }
+.sw-inox { background: radial-gradient(circle at 35% 30%, #ffffff, #a9b0b4); }
+.diffs-block { display: none; }
+.diffs { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 12px; font-size: 13.5px; }
+.diffs li { display: flex; gap: 7px; align-items: baseline; }
+.diffs li::before { content: ""; flex: none; width: 6px; height: 6px; transform: translateY(-2px) rotate(45deg); background: var(--leaf); }
+.hint-small { font-size: 12.5px; color: var(--muted); }
+.info-head { display: flex; align-items: center; gap: 10px; }
+.num { flex: none; display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--red); color: #fff; font-size: 15px; font-weight: 800; }
+.info-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.info-actions .ghost { flex: 0 1 auto; }
+
+/* marcadores */
+.hs { position: absolute; left: 0; top: 0; width: 32px; height: 32px; margin: -16px 0 0 -16px; display: grid; place-items: center; border: 2.5px solid #fff; border-radius: 50%; background: var(--forest); color: var(--on-forest); font: 800 14.5px var(--body); box-shadow: 0 3px 10px rgba(16, 40, 24, .35); cursor: pointer; pointer-events: auto; transition: opacity .25s, background .2s, scale .2s; }
+.hs::after { content: ""; position: absolute; inset: -7px; border-radius: 50%; border: 2px solid var(--forest); opacity: 0; animation: ping 2.6s ease-out infinite; }
+.hs:hover { scale: 1.12; }
+.hs.active { background: var(--red); color: #fff; scale: 1.15; }
+.hs.active::after { border-color: var(--red); }
+.hs.occluded { opacity: .38; }
+.hs.occluded::after { animation: none; }
+@keyframes ping { 0% { opacity: .7; transform: scale(.7); } 70%, 100% { opacity: 0; transform: scale(1.35); } }
+.dim { position: absolute; left: 0; top: 0; translate: -50% -50%; white-space: nowrap; padding: 4px 10px; border-radius: 8px; background: var(--forest); color: var(--on-forest); font: 800 14px var(--body); text-align: center; font-variant-numeric: tabular-nums; box-shadow: 0 2px 8px rgba(0,0,0,.18); }
+
+/* legenda da simulação e dica */
+.caption { position: fixed; top: calc(20px + env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; padding: 10px 18px 10px 10px; border-radius: 999px; background: var(--forest); color: var(--on-forest); font-size: 17px; font-weight: 700; box-shadow: 0 10px 30px rgba(16, 40, 24, .3); white-space: nowrap; }
+.caption b { display: grid; place-items: center; width: 32px; height: 32px; border-radius: 50%; background: var(--amber); color: var(--ink); font-size: 16px; }
+.hint { position: fixed; left: 50%; bottom: calc(var(--foot) + 22px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); padding: 8px 16px; border-radius: 999px; background: rgba(23, 32, 26, .78); color: #fff; font-size: 14px; font-weight: 600; pointer-events: none; transition: opacity .6s; white-space: nowrap; }
+.hint.gone { opacity: 0; }
+
+/* rodapé */
+.footer { position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--foot) + env(safe-area-inset-bottom, 0px)); padding-bottom: env(safe-area-inset-bottom, 0px); padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); display: flex; align-items: center; justify-content: space-between; gap: 16px; background: var(--forest); color: var(--on-forest); font-size: 14px; }
+.footer .f-left { display: flex; align-items: center; gap: 10px; min-width: 0; white-space: nowrap; overflow: hidden; }
+.footer .f-name { font-family: var(--display); font-size: 19px; font-weight: 700; letter-spacing: .04em; }
+.footer .sep { opacity: .5; }
+.f-diffs { display: flex; gap: 0; margin: 0; padding: 0; list-style: none; font-size: 13.5px; white-space: nowrap; }
+.f-diffs li + li::before { content: "◆"; margin: 0 12px; font-size: 8px; vertical-align: 2px; opacity: .55; }
+@media (max-width: 1180px) { .f-diffs { display: none; } }
+
+.floating { position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); flex: none; box-shadow: 0 6px 20px rgba(0,0,0,.12); }
+.mbar, .sheet-close { display: none; }
+
+/* modo apresentação */
+body.presenting .panel { display: none; }
+
+/* celular (retrato e paisagem) */
+@media (max-width: 760px), (max-height: 500px) {
+  :root { --foot: 38px; }
+  .brand { top: calc(10px + env(safe-area-inset-top, 0px)); left: max(12px, env(safe-area-inset-left, 0px)); padding: 9px 14px 10px; border-radius: 11px; }
+  .brand h1 { font-size: 27px; }
+  .brand .sub { font-size: 13.5px; margin-top: 2px; }
+  .brand .tag { display: none; }
+  .diffs-block { display: block; }
+  .panel, .info { top: auto; left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(var(--foot) + 66px + env(safe-area-inset-bottom, 0px)); width: auto; max-height: 56vh; overflow-y: auto; overscroll-behavior: contain; }
+  .panel { display: none; padding-top: 14px; max-height: 44vh; }
+  body.panel-open .panel { display: flex; }
+  body.presenting.panel-open .panel { display: none; }
+  .info { padding: 14px 16px; }
+  .info h3 { font-size: 25px; padding-right: 40px; }
+  .info .info-head h3 { padding-right: 34px; }
+  .panel section:first-of-type h2 { padding-right: 40px; }
+  .keys .row-btns #fullscreen { display: none; }
+  .keys p { display: none; }
+  .sheet-close { display: grid; place-items: center; position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; background: var(--leaf-soft); color: var(--forest); font: 700 22px/1 var(--body); cursor: pointer; z-index: 1; }
+  .mbar { display: flex; gap: 4px; position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--foot) + 12px + env(safe-area-inset-bottom, 0px)); padding: 4px; border-radius: 999px; background: var(--forest); box-shadow: 0 8px 24px rgba(16, 40, 24, .3); }
+  .mbtn { padding: 10px 18px; border: 0; border-radius: 999px; background: transparent; color: var(--on-forest); font-size: 15px; font-weight: 800; white-space: nowrap; cursor: pointer; transition: background .15s, color .15s; }
+  .mbtn[aria-expanded="true"] { background: var(--amber); color: var(--ink); }
+  body.presenting .mbar { display: none; }
+  .footer .f-long, .footer .sep { display: none; }
+  .caption { font-size: 14px; top: calc(70px + env(safe-area-inset-top, 0px)); white-space: normal; width: max-content; max-width: calc(100vw - 32px); }
+  .hint { display: none; }
+  .hs { width: 28px; height: 28px; margin: -14px 0 0 -14px; font-size: 13px; }
+}
+/* celular deitado: cartão à esquerda, modelo à direita */
+@media (max-height: 500px) and (min-width: 600px) {
+  .brand h1 { font-size: 22px; }
+  .brand .sub { display: none; }
+  .panel, .info { right: auto; width: min(380px, 48vw); top: calc(12px + env(safe-area-inset-top, 0px)); bottom: calc(var(--foot) + 66px + env(safe-area-inset-bottom, 0px)); max-height: none; }
+  .caption { top: calc(10px + env(safe-area-inset-top, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hs::after { animation: none; }
+}
+</style>
+<!--BODY-->
+<div id="stage"><canvas id="scene" aria-label="Modelo 3D do brete SafeBov. Arraste para girar."></canvas></div>
+<div id="labels" class="layer"></div>
+<div id="hotspots" class="layer"></div>
+
+<header class="brand">
+  <h1>BOVICARE</h1>
+  <p class="sub">Brete de contenção inteligente</p>
+  <p class="tag">Segurança, bem-estar e praticidade para um manejo mais eficiente.</p>
+</header>
+
+<div class="caption" id="caption" hidden><b id="cap-n">1</b><span id="cap-t"></span></div>
+<div class="hint" id="hint">Arraste para girar · role para aproximar · toque nos números</div>
+
+<aside class="panel" id="panel" aria-label="Comandos do modelo">
+  <button type="button" class="sheet-close" id="panel-close" aria-label="Fechar comandos">×</button>
+  <section>
+    <h2>Vistas</h2>
+    <div class="views" role="group" aria-label="Vistas do equipamento">
+      <button type="button" class="chip" data-view="perspectiva" aria-pressed="true">Perspectiva</button>
+      <button type="button" class="chip" data-view="frontal" aria-pressed="false">Frontal</button>
+      <button type="button" class="chip" data-view="lateral" aria-pressed="false">Lateral</button>
+      <button type="button" class="chip" data-view="traseira" aria-pressed="false">Traseira</button>
+      <button type="button" class="chip" data-view="superior" aria-pressed="false">Superior</button>
+    </div>
+  </section>
+
+  <section>
+    <h2>Acionamentos</h2>
+    <div>
+      <div class="mech" data-mech="head"><div><strong>Contenção de cabeça</strong><span class="state">Fechada</span></div><button type="button" class="act" id="mech-head">Abrir</button></div>
+      <div class="mech" data-mech="doors"><div><strong>Painéis laterais</strong><span class="state">Fechados</span></div><button type="button" class="act" id="mech-doors">Abrir</button></div>
+      <div class="mech" data-mech="tilt"><div><strong>Porta basculante</strong><span class="state">Fechada</span></div><button type="button" class="act" id="mech-tilt">Abrir</button></div>
+      <div class="mech" data-mech="belly"><div><strong>Cinta abdominal</strong><span class="state">Recolhida</span></div><button type="button" class="act" id="mech-belly">Elevar</button></div>
+      <div class="mech" data-mech="rear"><div><strong>Porta traseira</strong><span class="state">Fechada</span></div><button type="button" class="act" id="mech-rear">Abrir</button></div>
+      <div class="mech" data-mech="led"><div><strong>Iluminação LED</strong><span class="state">Desligada</span></div><button type="button" class="act" id="mech-led">Ligar</button></div>
+    </div>
+    <button type="button" class="primary" id="simulate">Simular manejo</button>
+    <p class="note">Entrada do animal, contenção da cabeça, cinta abdominal, iluminação e abertura dos painéis.</p>
+  </section>
+
+  <section>
+    <h2>Exibir</h2>
+    <div>
+      <button type="button" class="toggle" role="switch" aria-checked="true" id="tg-cow"><span>Animal</span><i></i></button>
+      <button type="button" class="toggle" role="switch" aria-checked="false" id="tg-dims"><span>Medidas (cotas)</span><i></i></button>
+      <button type="button" class="toggle" role="switch" aria-checked="true" id="tg-hs"><span>Pontos de destaque</span><i></i></button>
+      <button type="button" class="toggle" role="switch" aria-checked="false" id="tg-spin"><span>Giro automático</span><i></i></button>
+    </div>
+  </section>
+
+  <section class="keys">
+    <div class="row-btns">
+      <button type="button" class="ghost" id="present">Modo apresentação</button>
+      <button type="button" class="ghost" id="fullscreen">Tela cheia</button>
+    </div>
+    <p><kbd>P</kbd> apresentação &nbsp;<kbd>F</kbd> tela cheia &nbsp;<kbd>R</kbd> giro &nbsp;<kbd>Esc</kbd> voltar</p>
+  </section>
+</aside>
+
+<section class="info" id="info" aria-live="polite">
+  <button type="button" class="sheet-close" id="info-close" aria-label="Fechar">×</button>
+  <div id="info-body"></div>
+</section>
+
+<button type="button" class="ghost floating" id="exit-present" hidden>Sair da apresentação</button>
+<nav class="mbar" aria-label="Menu do modelo">
+  <button type="button" class="mbtn" id="m-panel" aria-controls="panel" aria-expanded="false">Comandos</button>
+  <button type="button" class="mbtn" id="m-info" aria-controls="info" aria-expanded="false">Ficha técnica</button>
+</nav>
+
+<footer class="footer">
+  <div class="f-left">
+    <span class="f-name">BOVICARE</span>
+    <span class="sep">|</span><span class="f-long">Brete de contenção inteligente</span>
+  </div>
+  <ul class="f-diffs" aria-label="Diferenciais">
+    <li>Mais conforto e bem-estar</li><li>Mais segurança para a equipe</li><li>Acesso fácil para exames</li><li>Menos estresse</li><li>Agilidade</li><li>Ajustável a diferentes portes</li>
+  </ul>
+</footer>
+
+<script>/*APP*/</script>
