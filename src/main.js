@@ -669,7 +669,7 @@ const VIEWS = {
   superior: { pos: [0.15, 7.6, -0.001], target: [0.15, 0.8, 0] },
   manejo: { pos: [-1.7, 3.3, -10.6], target: [-1.5, 0.85, 0] },
 };
-const isNarrow = () => window.innerWidth <= 760;
+const isNarrow = () => window.innerWidth <= 760 || window.innerHeight <= 500;
 const panelOpen = () => !document.body.classList.contains('presenting') && !isNarrow();
 function fitFactor() {
   const w = window.innerWidth - (panelOpen() ? 332 : 0);
@@ -699,15 +699,32 @@ function stepFly(dt) {
 }
 controls.addEventListener('start', () => { fly = null; setView(null); hideHint(); });
 
+// No celular, o modelo é recentralizado no espaço livre acima (ou ao lado) do cartão aberto.
+let sheet = null;                       // celular: null | 'panel' | 'info'
 function resize() {
   const w = window.innerWidth, h = window.innerHeight;
   renderer.setSize(w, h, false);
   camera.aspect = w / h;
-  const ox = panelOpen() ? 118 : 0;
-  camera.setViewOffset(w, h, ox, isNarrow() ? 0 : 22, w, h);
+  let ox = 0, oy = 0;
+  if (isNarrow()) {
+    const el = sheet === 'panel' ? $('#panel') : sheet === 'info' && !info.hidden ? info : null;
+    const foot = 38, bar = 66;
+    if (w > h && w >= 600) {
+      ox = el ? -Math.round((el.offsetWidth + 12) / 2) : 0;
+      oy = Math.round((foot + bar - 56) / 2);
+    } else {
+      const top = 60, bottom = foot + bar + (el ? el.offsetHeight + 8 : 0);
+      oy = Math.round((bottom - top) / 2);
+    }
+  } else {
+    ox = panelOpen() ? 118 : 0;
+    oy = 22;
+  }
+  camera.setViewOffset(w, h, ox, oy, w, h);
   camera.updateProjectionMatrix();
 }
-window.addEventListener('resize', () => { resize(); invalidate(); });
+const layoutSoon = () => requestAnimationFrame(() => { resize(); invalidate(); });
+window.addEventListener('resize', () => { updateInfoVisibility(); resize(); invalidate(); });
 controls.addEventListener('change', () => invalidate());
 
 /* ---------- destaques ---------- */
@@ -790,11 +807,13 @@ const FICHA = `
 let selected = null;
 function renderInfo() {
   const h = HOTSPOTS.find((x) => x.id === selected);
+  const body = $('#info-body');
   info.classList.toggle('is-detail', !!h);
-  if (!h) { info.innerHTML = FICHA; return; }
+  layoutSoon();
+  if (!h) { body.innerHTML = FICHA; return; }
   const n = HOTSPOTS.indexOf(h) + 1;
   const act = h.action ? `<button type="button" class="act" id="info-act">${ACTION_LABEL[h.action][target[h.action] > 0.5 ? 1 : 0]}</button>` : '';
-  info.innerHTML = `
+  body.innerHTML = `
     <div class="info-head"><b class="num">${n}</b><h3>${h.title}</h3></div>
     <p>${h.text}</p>
     <div class="info-actions">${act}<button type="button" class="ghost" id="info-back">Ver ficha técnica</button></div>`;
@@ -807,12 +826,11 @@ function select(id) {
   HOTSPOTS.forEach((h) => h.el.classList.toggle('active', h.id === id));
   setHighlight(id);
   renderInfo();
-  info.hidden = isNarrow() && !id;
   if (id) {
     flyTo(HOTSPOTS.find((h) => h.id === id).view);
     setView(null);
     hideHint();
-    if (isNarrow()) setPanel(false);
+    if (isNarrow()) setSheet('info');
   }
 }
 
@@ -871,7 +889,7 @@ async function simulate() {
   if (busy) return;
   busy = true;
   select(null);
-  info.hidden = true;
+  setSheet(null);
   syncUI();
   setCow(true);
   setSpin(false);
@@ -894,7 +912,8 @@ async function simulate() {
   await sleep(2200);
   caption(null);
   busy = false;
-  info.hidden = isNarrow() && !selected;
+  updateInfoVisibility();
+  layoutSoon();
   syncUI();
 }
 $('#simulate').addEventListener('click', simulate);
@@ -903,6 +922,7 @@ $('#simulate').addEventListener('click', simulate);
 function setPresenting(v) {
   document.body.classList.toggle('presenting', v);
   $('#exit-present').hidden = !v;
+  if (v && isNarrow()) setSheet(null);
   resize();
   invalidate();
 }
@@ -915,21 +935,32 @@ function toggleFullscreen() {
   } catch (e) { /* sem suporte */ }
 }
 $('#fullscreen').addEventListener('click', toggleFullscreen);
-function setPanel(open) {
-  document.body.classList.toggle('panel-open', open);
-  $('#panel-toggle').setAttribute('aria-expanded', String(open));
-  $('#panel-toggle').textContent = open ? 'Fechar comandos' : 'Comandos';
-  if (open && isNarrow()) info.hidden = true;
-  else info.hidden = isNarrow() && !selected;
+// Cartões do celular: um de cada vez (Comandos ou Ficha técnica / detalhe).
+function updateInfoVisibility() {
+  info.hidden = isNarrow() ? sheet !== 'info' : busy;
 }
-$('#panel-toggle').addEventListener('click', () => setPanel(!document.body.classList.contains('panel-open')));
+function setSheet(which) {
+  sheet = which;
+  document.body.classList.toggle('panel-open', which === 'panel');
+  $('#m-panel').setAttribute('aria-expanded', String(which === 'panel'));
+  $('#m-info').setAttribute('aria-expanded', String(which === 'info'));
+  updateInfoVisibility();
+  layoutSoon();
+}
+$('#m-panel').addEventListener('click', () => setSheet(sheet === 'panel' ? null : 'panel'));
+$('#m-info').addEventListener('click', () => {
+  if (sheet === 'info' && selected) select(null);        // do detalhe, volta para a ficha
+  else setSheet(sheet === 'info' ? null : 'info');
+});
+$('#panel-close').addEventListener('click', () => setSheet(null));
+$('#info-close').addEventListener('click', () => { if (selected) select(null); setSheet(null); });
 window.addEventListener('keydown', (e) => {
   if (e.target.closest('input, textarea')) return;
   const k = e.key.toLowerCase();
   if (k === 'p') setPresenting(!document.body.classList.contains('presenting'));
   else if (k === 'f') toggleFullscreen();
   else if (k === 'r') { const b = $('#tg-spin'); b.click(); }
-  else if (k === 'escape') { if (selected) select(null); else if (document.body.classList.contains('presenting')) setPresenting(false); }
+  else if (k === 'escape') { if (selected) select(null); else if (sheet) setSheet(null); else if (document.body.classList.contains('presenting')) setPresenting(false); }
 });
 
 const hint = $('#hint');
@@ -1030,13 +1061,13 @@ async function exportGLB() {
   for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
   return btoa(bin);
 }
-window.__safebov = { exportGLB, S, flyTo, VIEWS, select, mech, setView, stats: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, meshes: (() => { let n = 0; model.traverse((o) => { if (o.isMesh) n++; }); return n; })() }) };
+window.__safebov = { exportGLB, S, flyTo, VIEWS, select, mech, setView, setSheet, stats: () => ({ calls: renderer.info.render.calls, tris: renderer.info.render.triangles, meshes: (() => { let n = 0; model.traverse((o) => { if (o.isMesh) n++; }); return n; })() }) };
 
 /* ---------- início ---------- */
 resize();
 applyPose(0);
 renderInfo();
-info.hidden = isNarrow();
+updateInfoVisibility();
 syncUI();
 {
   const v = VIEWS.perspectiva;

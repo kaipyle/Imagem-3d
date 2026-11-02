@@ -126,29 +126,44 @@ kbd { display: inline-block; min-width: 20px; padding: 0 5px; border: 1px solid 
 .footer .motto { font-family: var(--display); font-size: 22px; white-space: nowrap; }
 
 .floating { position: fixed; top: calc(16px + env(safe-area-inset-top, 0px)); right: max(16px, env(safe-area-inset-right, 0px)); flex: none; box-shadow: 0 6px 20px rgba(0,0,0,.12); }
-.panel-toggle { display: none; }
+.mbar, .sheet-close { display: none; }
 
 /* modo apresentação */
 body.presenting .panel { display: none; }
 
-/* telas estreitas */
-@media (max-width: 760px) {
+/* celular (retrato e paisagem) */
+@media (max-width: 760px), (max-height: 500px) {
   :root { --foot: 38px; }
   .brand { top: calc(12px + env(safe-area-inset-top, 0px)); left: max(16px, env(safe-area-inset-left, 0px)); gap: 8px; }
   .brand .logo { width: 44px; height: 44px; }
   .brand h1 { font-size: 42px; }
   .brand p { display: none; }
-  .panel { display: none; top: auto; left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(var(--foot) + 64px + env(safe-area-inset-bottom, 0px)); width: auto; max-height: 58vh; }
+  .panel, .info { top: auto; left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); bottom: calc(var(--foot) + 66px + env(safe-area-inset-bottom, 0px)); width: auto; max-height: 56vh; overflow-y: auto; overscroll-behavior: contain; }
+  .panel { display: none; padding-top: 14px; }
   body.panel-open .panel { display: flex; }
   body.presenting.panel-open .panel { display: none; }
-  .panel-toggle { display: block; position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--foot) + 14px + env(safe-area-inset-bottom, 0px)); padding: 11px 22px; border: 0; border-radius: 999px; background: var(--forest); color: var(--on-forest); font-size: 15px; font-weight: 800; box-shadow: 0 8px 24px rgba(16, 40, 24, .3); cursor: pointer; }
-  body.presenting .panel-toggle { display: none; }
-  .info { left: max(12px, env(safe-area-inset-left, 0px)); right: max(12px, env(safe-area-inset-right, 0px)); width: auto; bottom: calc(var(--foot) + 64px + env(safe-area-inset-bottom, 0px)); padding: 14px 16px; }
-  .info h3 { font-size: 25px; }
+  .info { padding: 14px 16px; }
+  .info h3 { font-size: 25px; padding-right: 40px; }
+  .info .info-head h3 { padding-right: 34px; }
+  .panel section:first-of-type h2 { padding-right: 40px; }
+  .keys .row-btns #fullscreen { display: none; }
+  .keys p { display: none; }
+  .sheet-close { display: grid; place-items: center; position: absolute; top: 10px; right: 10px; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%; background: var(--leaf-soft); color: var(--forest); font: 700 22px/1 var(--body); cursor: pointer; z-index: 1; }
+  .mbar { display: flex; gap: 4px; position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(var(--foot) + 12px + env(safe-area-inset-bottom, 0px)); padding: 4px; border-radius: 999px; background: var(--forest); box-shadow: 0 8px 24px rgba(16, 40, 24, .3); }
+  .mbtn { padding: 10px 18px; border: 0; border-radius: 999px; background: transparent; color: var(--on-forest); font-size: 15px; font-weight: 800; white-space: nowrap; cursor: pointer; transition: background .15s, color .15s; }
+  .mbtn[aria-expanded="true"] { background: var(--amber); color: var(--ink); }
+  body.presenting .mbar { display: none; }
   .footer .f-long, .footer .motto, .footer .sep { display: none; }
   .caption { font-size: 14px; top: calc(70px + env(safe-area-inset-top, 0px)); white-space: normal; width: max-content; max-width: calc(100vw - 32px); }
   .hint { display: none; }
   .hs { width: 28px; height: 28px; margin: -14px 0 0 -14px; font-size: 13px; }
+}
+/* celular deitado: cartão à esquerda, modelo à direita */
+@media (max-height: 500px) and (min-width: 600px) {
+  .brand .logo { width: 34px; height: 34px; }
+  .brand h1 { font-size: 32px; }
+  .panel, .info { right: auto; width: min(380px, 48vw); top: calc(12px + env(safe-area-inset-top, 0px)); bottom: calc(var(--foot) + 66px + env(safe-area-inset-bottom, 0px)); max-height: none; }
+  .caption { top: calc(10px + env(safe-area-inset-top, 0px)); }
 }
 @media (prefers-reduced-motion: reduce) {
   .hs::after { animation: none; }
@@ -171,6 +186,7 @@ body.presenting .panel { display: none; }
 <div class="hint" id="hint">Arraste para girar · role para aproximar · toque nos números</div>
 
 <aside class="panel" id="panel" aria-label="Comandos do modelo">
+  <button type="button" class="sheet-close" id="panel-close" aria-label="Fechar comandos">×</button>
   <section>
     <h2>Vistas</h2>
     <div class="views" role="group" aria-label="Vistas do equipamento">
@@ -212,10 +228,16 @@ body.presenting .panel { display: none; }
   </section>
 </aside>
 
-<section class="info" id="info" aria-live="polite"></section>
+<section class="info" id="info" aria-live="polite">
+  <button type="button" class="sheet-close" id="info-close" aria-label="Fechar">×</button>
+  <div id="info-body"></div>
+</section>
 
 <button type="button" class="ghost floating" id="exit-present" hidden>Sair da apresentação</button>
-<button type="button" class="panel-toggle" id="panel-toggle" aria-controls="panel" aria-expanded="false">Comandos</button>
+<nav class="mbar" aria-label="Menu do modelo">
+  <button type="button" class="mbtn" id="m-panel" aria-controls="panel" aria-expanded="false">Comandos</button>
+  <button type="button" class="mbtn" id="m-info" aria-controls="info" aria-expanded="false">Ficha técnica</button>
+</nav>
 
 <footer class="footer">
   <div class="f-left">
