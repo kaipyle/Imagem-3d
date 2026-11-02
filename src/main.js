@@ -632,7 +632,7 @@ const VIEWS = {
   lateral: { pos: [0.15, 1.15, -6.6], target: [0.15, 1.05, 0] },
   traseira: { pos: [-6.2, 1.2, 0.0001], target: [-0.3, 1.05, 0] },
   superior: { pos: [0.15, 7.6, -0.001], target: [0.15, 0.8, 0] },
-  manejo: { pos: [-1.3, 2.5, -7.4], target: [-1.45, 0.9, 0] },
+  manejo: { pos: [-1.7, 3.3, -10.6], target: [-1.5, 0.85, 0] },
 };
 const isNarrow = () => window.innerWidth <= 760;
 const panelOpen = () => !document.body.classList.contains('presenting') && !isNarrow();
@@ -834,6 +834,7 @@ async function simulate() {
   if (busy) return;
   busy = true;
   select(null);
+  info.hidden = true;
   syncUI();
   setCow(true);
   setSpin(false);
@@ -856,6 +857,7 @@ async function simulate() {
   await sleep(2200);
   caption(null);
   busy = false;
+  info.hidden = isNarrow() && !selected;
   syncUI();
 }
 $('#simulate').addEventListener('click', simulate);
