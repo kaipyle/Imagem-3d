@@ -459,7 +459,7 @@ const legs = [];
   const bodyGeo = new THREE.LatheGeometry(prof, 48);
   bodyGeo.rotateZ(-Math.PI / 2);
   const body = sh(new THREE.Mesh(bodyGeo, hide));
-  body.scale.set(1, 0.98, 0.8);
+  body.scale.set(1, 1.04, 0.82);
   body.position.set(0, 1.0, 0);
   cow.add(body);
   ell(cow, 0.42, 0.08, 0.22, -0.60, 1.275, 0);                    // garupa
@@ -477,11 +477,11 @@ const legs = [];
   face.position.set(0.22, -0.01, 0);
   face.scale.set(1, 0.92, 1);
   hd.add(face);
-  ell(hd, 0.075, 0.068, 0.082, 0.375, -0.012, 0, muzzle);         // focinho
+  ell(hd, 0.066, 0.062, 0.076, 0.37, -0.012, 0, muzzle);         // focinho
   ell(hd, 0.07, 0.035, 0.1, 0.0, 0.12, 0);                        // nuca
   for (const s of [-1, 1]) {
-    ell(hd, 0.011, 0.011, 0.011, 0.445, 0.0, s * 0.032, hoof);
-    ell(hd, 0.02, 0.02, 0.02, 0.10, 0.07, s * 0.1, eyeM);
+    ell(hd, 0.01, 0.01, 0.01, 0.432, 0.0, s * 0.03, hoof);
+    ell(hd, 0.016, 0.016, 0.014, 0.11, 0.06, s * 0.098, eyeM);
     const ear = ell(hd, 0.028, 0.045, 0.105, 0.16, 0.05, s * 0.185, hide, [s * 0.3, 0, 0]);
     ear.name = 'Orelha';
     const tg = sh(new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.05, 0.04), tag));
@@ -632,7 +632,7 @@ const VIEWS = {
   lateral: { pos: [0.15, 1.15, -6.6], target: [0.15, 1.05, 0] },
   traseira: { pos: [-6.2, 1.2, 0.0001], target: [-0.3, 1.05, 0] },
   superior: { pos: [0.15, 7.6, -0.001], target: [0.15, 0.8, 0] },
-  manejo: { pos: [-2.6, 2.3, -5.0], target: [-1.0, 0.95, 0] },
+  manejo: { pos: [-1.3, 2.5, -7.4], target: [-1.45, 0.9, 0] },
 };
 const isNarrow = () => window.innerWidth <= 760;
 const panelOpen = () => !document.body.classList.contains('presenting') && !isNarrow();
